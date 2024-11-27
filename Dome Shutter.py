@@ -172,11 +172,16 @@ class TCPServer():
                 self.client_socket.close()
             except Exception as e:
                 print(f"Error closing client socket: {e}")
+            finally:
+                self.client_socket = None
+                self.client_addr = None
         if self.server_socket:
             try:
                 self.server_socket.close()
             except Exception as e:
                 print(f"Error closing server socket: {e}")
+            finally:
+                self.server_socket = None
         print("Sockets closed.")
 
 class Shutter():
