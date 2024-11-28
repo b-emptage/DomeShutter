@@ -12,9 +12,13 @@ import time
 import socket
 import select
 from ctypes import *
+import win32com.client
+from pydub import AudioSegment
+from pydub.playback import play
+from queue import Queue
+import threading
 #from msl.loadlib import LoadLibrary
 #from msl.loadlib import IS_PYTHON_64BIT
-#import os
 import sys
 
 
@@ -121,14 +125,13 @@ class TCPServer():
             pass  # No connection ready to be accepted
 
     def receive_data(self):
+        """Receive data from the client if available."""
         if self.client_socket:
             try:
-                # Check if client socket is valid before select
+                # Check if client socket is valid before using it
                 if self.client_socket.fileno() == -1:
                     print("Client socket is invalid. Cleaning up...")
-                    self.client_socket.close()
-                    self.client_socket = None
-                    self.client_addr = None
+                    self.cleanup_client()
                     return None
                 
                 # Check if data is available to read
@@ -144,22 +147,38 @@ class TCPServer():
                         
                         return data.decode()
                     else:
-                        # No data indicates the client has disconnected
-                        print(f"{self.client_addr} disconnected")
-                        self.client_socket.close()
-                        self.client_socket = None
-                        self.client_addr = None
+                        # No data means the client has disconnected
+                        print(f"{self.client_addr} disconnected.")
+                        self.cleanup_client()
+                return None
+    
             except BlockingIOError:
                 pass  # No data ready to be read
-            except ConnectionAbortedError:
-                print("Connection aborted by client. Reinitializing server...")
-                self.reinitialize_server()
+            except ConnectionResetError:
+                print("Connection forcibly closed by client. Cleaning up...")
+                self.cleanup_client()
+            except Exception as e:
+                print(f"Unexpected error while receiving data: {e}")
+                self.cleanup_client()
         return None
     
-    def send_data(self, message):
+    def cleanup_client(self):
+        # Clean up client resources after disconnection or error.
         if self.client_socket:
             try:
-                _, writable, _ = select.select([], [self.client_socket], [], 0.5)
+                self.client_socket.close()
+            except Exception as e:
+                print(f"Error closing client socket: {e}")
+            finally:
+                self.client_socket = None
+                self.client_addr = None
+        print("Client resources cleaned up. Ready to accept a new connection.")
+    
+    def send_data(self, message):
+        # send some data to the client if the socket is writable
+        if self.client_socket:
+            try:
+                _, writable, _ = select.select([], [self.client_socket], [], 1)
                 if writable:
                     self.client_socket.send(message.encode('utf-8'))
             except Exception as e:
@@ -167,6 +186,7 @@ class TCPServer():
         return None
 
     def close(self):
+        # close the client and host sockets
         if self.client_socket:
             try:
                 self.client_socket.close()
@@ -252,9 +272,10 @@ class Shutter():
         if data:
             if "close" in data.lower():
                 # need to close both shutters
-                westShutter.closeShutter()
+                speaker.speak_async("Rain detected. Closing dome in 5 seconds - please stand clear.")
+                root.after(5000, westShutter.closeShutter)
                 # stagger shutter closes to prevent overcurrent on system
-                root.after(1500, eastShutter.closeShutter)
+                root.after(7000, eastShutter.closeShutter)
                 self.tcp_server.send_data("Dome closing")
     
         # Schedule the next poll in 500 ms
@@ -359,6 +380,53 @@ class Shutter():
             self.open_button.configure(style="TButton")
             self.close_button.configure(style="TButton")
 
+
+class Speaker:
+    def __init__(self):
+        self.speaker = win32com.client.Dispatch("SAPI.SpVoice")
+        self.speaker.Rate = -3
+        self.queue = Queue()
+        self.thread = threading.Thread(target=self._process_queue, daemon=True)
+        self.thread.start()
+
+    def _process_queue(self):
+        while True:
+            item = self.queue.get()
+            if item is None:  # Stop signal
+                break
+            try:
+                if isinstance(item, str):  # Text input
+                    self.speaker.Speak(item)
+                elif isinstance(item, dict) and item.get("type") == "audio":  # Audio input
+                    file_path = item.get("file_path")
+                    self._play_audio(file_path)
+                else:
+                    print(f"Invalid input to Speaker: {item}")
+            except Exception as e:
+                print(f"Error processing queue: {e}")
+
+    def _play_audio(self, file_path):
+        try:
+            audio = AudioSegment.from_file(file_path)
+            play(audio)
+        except Exception as e:
+            print(f"Error playing audio file {file_path}: {e}")
+
+    def speak_async(self, text):
+        #queue a text message for text-to-speech.
+        self.queue.put(text)
+
+    def play_audio_async(self, file_path):
+        # queue an audio file to play.
+        self.queue.put({"type": "audio", "file_path": file_path})
+
+    def shutdown(self):
+        #Shutdown the speaker system
+        self.queue.put(None)
+        self.thread.join()
+        
+
+
 # root window
 root = tk.Tk()
 #root.geometry('370x175')
@@ -389,6 +457,7 @@ ttk.Style().configure('TLabelframe.Label', background=bg,font=("TkDefaultFont", 
 ttk.Style().configure('TLabel', background=bg)
 
 #Create an instance of each shutter
+speaker = Speaker()
 westShutter = Shutter(root, "West", "Left")
 eastShutter = Shutter(root, "East", "Right")
 root.resizable(False, False)
