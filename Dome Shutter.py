@@ -101,6 +101,22 @@ class TCPServer():
             self.server_socket.setblocking(False)
             self.client_socket = None
             self.client_addr = None
+            self.polling = False
+
+    def start_polling(self, root, callback):
+        if not self.polling:
+            self.polling = True
+            self._poll_server(root, callback)
+
+
+    def _poll_server(self, root, callback):
+        self.accept_client()
+        data = self.receive_data()
+        if data:
+            callback(data)
+        elif not self.client_socket:  # Client is disconnected
+            callback(None)  # Notify of disconnection
+        root.after(500, self._poll_server, root, callback)
     
     def reinitialize_server(self):
         print("Reinitializing the server socket...")
@@ -205,29 +221,34 @@ class TCPServer():
         print("Sockets closed.")
 
 class Shutter():
-    oTime = 9.0 #Time for shutter to fully open or Close
-    timeInc=int(1000*oTime/100.0) #time between callbacks for shutter progress update
-    timeCorrection = 0.11 #Seconds to add to opening/closing time for each stop
-    shutterColumn = 0    #incremented for each Shutter instance
-    tcp_polling = False
+    oTime = 9.0  # Time for shutter to fully open or close
+    timeInc = int(1000 * oTime / 100.0)  # Time between callbacks for shutter progress update
+    timeCorrection = 0.11  # Seconds to add to opening/closing time for each stop
+    shutterColumn = 0  # Incremented for each Shutter instance
+    tcp_indicator_frame = None
+    tcp_status_label = None
+    tcp_led_canvas = None
     
-    def __init__(self,root,titleText,side):
+    def __init__(self, root, titleText, side):
         self.root = root
-        self.name = titleText        
+        self.name = titleText
         self.tStart = time.time()
         self.tEnd = Shutter.oTime
-        self.cb = "None"  #Holds callback ID for shutter timing
-        self.upDown = -1 #initially closed
+        self.cb = "None"  # Holds callback ID for shutter timing
+        self.upDown = -1  # Initially closed
         
         self.tcp_server = TCPServer()
-        # ensure we only establish a single poller
-        if not Shutter.tcp_polling:
-            self.poll_server()
-            Shutter.tcp_polling = True
+        self.tcp_server.start_polling(self.root, self.handle_tcp_data)
         
-        self.lf = ttk.LabelFrame(root,labelanchor='n',text=titleText,style="TLabelframe")
-        self.lf.grid(column=Shutter.shutterColumn,row=0,padx=1,pady=1)
+        # Create a frame to hold everything for this shutter
+        self.outer_frame = tk.Frame(root, bg="#990000")
+        self.outer_frame.grid(column=Shutter.shutterColumn, row=0, padx=2, pady=2, sticky="nsew")
+
+        # Add the main label frame for the shutter
+        self.lf = ttk.LabelFrame(self.outer_frame, labelanchor="n", text=titleText, style="TLabelframe")
+        self.lf.pack(fill="both", expand=True, padx=2, pady=2)
         Shutter.shutterColumn += 1
+        
         self.pb = ttk.Progressbar(
             self.lf,
             orient='vertical',
@@ -236,50 +257,63 @@ class Shutter():
             value=100,
             style="red.Horizontal.TProgressbar"
         )
-        # place the progressbar
-        self.value_label = ttk.Label(self.lf, text=self.update_progress_label(),width=14)
+        # Place the progress bar
+        self.value_label = ttk.Label(self.lf, text=self.update_progress_label(), width=14)
         if side == "Left":
-            self.pb.grid(column=0, row=0, columnspan=1,rowspan=3, padx=10, pady=10)
+            self.pb.grid(column=0, row=0, columnspan=1, rowspan=3, padx=10, pady=10)
             self.value_label.grid(column=0, row=3, columnspan=1)
         else:
-            self.pb.grid(column=2, row=0, columnspan=1,rowspan=3, padx=10, pady=10)
+            self.pb.grid(column=2, row=0, columnspan=1, rowspan=3, padx=10, pady=10)
             self.value_label.grid(column=2, row=3, columnspan=1)
         
-        # start button
-        self.open_button = ttk.Button(self.lf,text='Open',command=self.openShutter)
+        # Start button
+        self.open_button = ttk.Button(self.lf, text='Open', command=self.openShutter)
         self.open_button.grid(column=1, row=2, padx=10, pady=2, sticky=tk.E)
         
-        
-        self.close_button = ttk.Button(self.lf,text='Close',command=self.closeShutter)
+        self.close_button = ttk.Button(self.lf, text='Close', command=self.closeShutter)
         self.close_button.grid(column=1, row=0, padx=10, pady=2, sticky=tk.E)
         
-        self.stop_button = ttk.Button(self.lf,text='Stop',command=self.stopShutter)
+        self.stop_button = ttk.Button(self.lf, text='Stop', command=self.stopShutter)
         self.stop_button.grid(column=1, row=1, padx=10, pady=2, sticky=tk.W)
         
         if self.name == "West":
-            self.motor = Motor(Motor.WESTOPEN,Motor.WESTCLOSE)
+            self.motor = Motor(Motor.WESTOPEN, Motor.WESTCLOSE)
         elif self.name == "East":
-            self.motor = Motor(Motor.EASTOPEN,Motor.EASTCLOSE)
- 
+            self.motor = Motor(Motor.EASTOPEN, Motor.EASTCLOSE)
+
     def update_progress_label(self):
         return "Closed: {:5.1f}%".format(self.pb['value'])
     
-    def poll_server(self):
-        # Check for incoming connections and data
-        self.tcp_server.accept_client()
-        data = self.tcp_server.receive_data()
-        
+    def handle_tcp_data(self, data):
+        # Handle data from the TCP server
         if data:
             if "close" in data.lower():
-                # need to close both shutters
+                # Close both shutters
                 speaker.speak_async("Rain detected. Closing dome in 5 seconds - please stand clear.")
-                root.after(5000, westShutter.closeShutter)
-                # stagger shutter closes to prevent overcurrent on system
-                root.after(7000, eastShutter.closeShutter)
+                self.root.after(5000, westShutter.closeShutter)
+                self.root.after(7000, eastShutter.closeShutter)
                 self.tcp_server.send_data("Dome closing")
-    
-        # Schedule the next poll in 500 ms
-        self.root.after(500, self.poll_server)
+            self.update_tcp_status(True)
+        else:
+            self.update_tcp_status(False)
+
+    def update_tcp_status(self, connected):
+        """Update the TCP LED indicator."""
+        color = "#009900" if connected else "#990000"
+        # Can have an issue on startup, where east shutter isn't initialised yet
+        try:
+            eastShutter.outer_frame.config(bg=color)
+        except Exception:
+            pass  # just continue on if we can't set the background colour
+        try:
+            westShutter.outer_frame.config(bg=color)
+        except Exception:
+            pass  # keep on keeping on
+        # Propagate color changes to internal widgets if needed
+        # self.lf.config(style="Custom.TLabelframe")
+        # ttk.Style().configure("Custom.TLabelframe", background=color)
+        # ttk.Style().configure("Custom.TLabelframe.Label", background=color)
+
     
     def on_close(self):
         # Close the server and the GUI
