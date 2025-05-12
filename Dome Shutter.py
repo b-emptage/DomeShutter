@@ -414,7 +414,7 @@ class Shutter():
             self.open_button.configure(style="TButton")
             self.close_button.configure(style="TButton")
 
-
+# TODO: fix speaking (duplicate to RainMonT)
 class Speaker:
     def __init__(self):
         self.speaker = win32com.client.Dispatch("SAPI.SpVoice")
