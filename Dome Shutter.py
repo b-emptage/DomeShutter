@@ -13,6 +13,7 @@ import socket
 import select
 from ctypes import *
 import win32com.client
+import pythoncom
 from pydub import AudioSegment
 from pydub.playback import play
 from queue import Queue
@@ -424,6 +425,7 @@ class Speaker:
         self.thread.start()
 
     def _process_queue(self):
+        pythoncom.CoInitialize()
         while True:
             item = self.queue.get()
             if item is None:  # Stop signal
@@ -438,6 +440,8 @@ class Speaker:
                     print(f"Invalid input to Speaker: {item}")
             except Exception as e:
                 print(f"Error processing queue: {e}")
+            finally:
+                pythoncom.CoUninitialize()
 
     def _play_audio(self, file_path):
         try:
