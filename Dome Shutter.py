@@ -9,8 +9,10 @@ from tkinter import ttk
 import tkinter as tk
 from tkinter.messagebox import askokcancel
 import time
+from datetime import datetime, timedelta
 import socket
 import select
+import subprocess
 from ctypes import *
 import win32com.client
 import pythoncom
@@ -22,6 +24,11 @@ import threading
 #from msl.loadlib import IS_PYTHON_64BIT
 import sys
 
+
+TIMEOUT_MINUTES = 5
+CHECK_INTERVAL = 60  # seconds between RDP activity checks
+
+last_active_time = datetime.now()
 
 class Motor():
     #Velleman output ports
@@ -73,10 +80,43 @@ class Motor():
         self.closing = False
         self.opening = False
 
- 
-#velleman=windll.LoadLibrary (os.getcwd()+"\\K8055D")
-#velleman.OpenDevice(0)
-#mydll.ConfigureMCP2200(0,9600,0,0,False,False, False, False)
+
+class Telescope:
+    ASCOM_DRIVER = "DDR_ASCOM.Telescope"
+    def __init__(self):
+        self.tele = None
+        try:
+            pythoncom.CoInitialize()  # Initialize COM
+            self.tele = win32com.client.Dispatch(self.ASCOM_DRIVER)
+        except Exception as e:
+            print(f"Error connecting to ASCOM driver {self.ASCOM_DRIVER}: {e}")
+
+    def connect(self):
+        if self.tele:
+            self.tele.Connected = True
+    
+    def check_park(self):
+        if self.tele and self.tele.Connected:
+            return self.tele.AtPark
+        
+    def park(self):
+        if self.tele and self.tele.Connected:
+            # only park telescope if not currently parked
+            if not self.check_park():
+                self.tele.Park()
+        
+    def disconnect(self):
+        if self.tele:
+            self.tele.Connected = False        
+            
+    def abort_slew(self):
+        # only abort slew if telescope already slewing
+        if self.tele and self.check_slew_status():
+            self.tele.AbortSlew()
+    
+    def check_slew_status(self):
+        if self.tele and self.tele.Connected:
+            return self.tele.Slewing
 
 class TCPServer():
     HOST = '127.0.0.1'
@@ -290,7 +330,7 @@ class Shutter():
         if data:
             if "close" in data.lower():
                 # Close both shutters
-                speaker.speak_async("Rain detected. Closing dome in 5 seconds - please stand clear.")
+                speaker.speak_async("Dome closing in five seconds. Please stand clear.")
                 self.root.after(5000, westShutter.closeShutter)
                 self.root.after(7000, eastShutter.closeShutter)
                 self.tcp_server.send_data("Dome closing")
@@ -415,7 +455,6 @@ class Shutter():
             self.open_button.configure(style="TButton")
             self.close_button.configure(style="TButton")
 
-# TODO: fix speaking (duplicate to RainMonT)
 class Speaker:
     def __init__(self):
         self.speaker = win32com.client.Dispatch("SAPI.SpVoice")
@@ -430,25 +469,35 @@ class Speaker:
             item = self.queue.get()
             if item is None:  # Stop signal
                 break
+    
+            file_path = None  # Ensure it's always defined
             try:
                 if isinstance(item, str):  # Text input
-                    self.speaker.Speak(item)
+                    if self.speaker:
+                        self.speaker.Speak(item)
+                    else:
+                        print(f"[{time.strftime('%H:%M:%S')}] "+
+                              "Speaker not initialized. Skipping speech.")
                 elif isinstance(item, dict) and item.get("type") == "audio":  # Audio input
                     file_path = item.get("file_path")
-                    self._play_audio(file_path)
+                    if file_path:
+                        self._play_audio(file_path)
+                    else:
+                        print("No audio file provided, skipping play.")
                 else:
                     print(f"Invalid input to Speaker: {item}")
             except Exception as e:
-                print(f"Error processing queue: {e}")
-            finally:
-                pythoncom.CoUninitialize()
+                print(f"[{time.strftime('%H:%M:%S')}] "+
+                      f"Error processing item: {e}")
+        pythoncom.CoUninitialize()
 
     def _play_audio(self, file_path):
         try:
             audio = AudioSegment.from_file(file_path)
             play(audio)
         except Exception as e:
-            print(f"Error playing audio file {file_path}: {e}")
+            print(f"[{time.strftime('%H:%M:%S')}] "
+                  + f"Error playing audio file {file_path}: {e}")
 
     def speak_async(self, text):
         #queue a text message for text-to-speech.
@@ -462,13 +511,111 @@ class Speaker:
         #Shutdown the speaker system
         self.queue.put(None)
         self.thread.join()
+
+class shutdown_monitor:
+    def __init__(self, stop_event):
+        self.stop_event = stop_event
         
+    def is_rdp_active(self):
+        '''
+        Checks if there is currently an active RDP session to the machine
+        '''
+        try:
+            result = subprocess.run(['qwinsta'], capture_output=True, text=True)
+            output = result.stdout.lower()
+            lines = output.splitlines()
+            for line in lines:
+                if 'rdp-tcp' in line and 'active' in line:
+                    return True
+            return False
+        except Exception as e:
+            print(f"Error checking RDP session: {e}")
+            return False
+
+    def disconnected_client_shutdown(self):
+        print(f"[{datetime.now()}] No RDP session detected for {TIMEOUT_MINUTES}m.")
+        scope = None
+        shutter_east = None
+        shutter_west = None
+        try:
+            shutter_east = Motor(Motor.EASTOPEN, Motor.EASTCLOSE)
+            shutter_west = Motor(Motor.WESTOPEN, Motor.WESTCLOSE)
+            scope = Telescope()
+        except Exception as e:
+            print(f"Error connecting equipment: {e}")
+        if scope:
+            scope.abort_slew()
+            time.sleep(0.5)  # give it a half second
+            scope.park()
+        if shutter_east:
+            shutter_west.close()
+            time.sleep(1)  # prevent over-current on switch by staggering motors
+            shutter_east.close()
+        pythoncom.CoUninitialize()  # this will close the ASCOM client
+            
+    
+    
+    def monitor_rdp(self):
+        global last_active_time
+        print("Starting RDP session monitor...")
+        while not self.stop_event.is_set():
+            if self.is_rdp_active():
+                last_active_time = datetime.now()
+                print(f"[{datetime.now()}] RDP session active.")
+            else:
+                elapsed = datetime.now() - last_active_time
+                print(f"[{datetime.now()}] No active RDP session. Elapsed: {elapsed}")
+                if elapsed > timedelta(minutes=TIMEOUT_MINUTES):
+                    self.disconnected_client_shutdown()
+                    # Wait until RDP reconnects
+                    self.wait_for_rdp()
+            time.sleep(CHECK_INTERVAL)
+    
+    def wait_for_rdp(self):
+        print("Waiting for RDP reconnection...")
+        while not self.is_rdp_active():
+            print(f"[{datetime.now()}] No active RDP session.")
+            time.sleep(CHECK_INTERVAL)
+        print(f"[{datetime.now()}] RDP session reconnected.")
+
+
+def start_rdp_monitor():
+    stop_event = threading.Event()
+    monitor = shutdown_monitor(stop_event)
+    threading.Thread(target=monitor.monitor_rdp, daemon=True).start()
+
+developer_mode = {"enabled": False}
+
+def open_secret_menu():
+    dev_window = tk.Toplevel()
+    dev_window.title("Shutdown Controls")
+    dev_window.text = tk.LabelFrame(dev_window)
+    dev_window.geometry("200x150")
+
+    def toggle_dev_mode():
+        developer_mode["enabled"] = dev_var.get()
+        print(f"Developer mode set to: {developer_mode['enabled']}")
+        
+    warn_label = tk.Label(dev_window, text="WARNING: Disabling this feature\n" +
+                          "will stop the system from \n" +
+                          "shutting down safely in \n" +
+                          "the event of a disconnect.")
+    warn_label.pack(pady=10)    
+
+    dev_var = tk.BooleanVar(value=developer_mode["enabled"])
+    dev_checkbox = ttk.Checkbutton(dev_window,
+                                   text="Disable RDP auto-shutdown?",
+                                   variable=dev_var, command=toggle_dev_mode)
+    dev_checkbox.pack(pady=10)
+
+
 
 
 # root window
 root = tk.Tk()
+root.bind("<s>", lambda event: open_secret_menu())
 #root.geometry('370x175')
-root.title('Shutter Control v0.9.2')
+root.title('Shutter Control v1.0')
 # progressbar
 #s = ttk.Style()
 #print s.theme_names()
@@ -489,6 +636,7 @@ ttk.Style().configure("green.TButton", background="green")
 
 #Background styles darker than default and LableFrame text to bold
 bg = "#aaaaaa"
+stop_event = None  # initialise a stop_event prior to 
 #print ttk.Style().lookup("TLabelframe.Label", "font")
 ttk.Style().configure('TLabelframe', background=bg)
 ttk.Style().configure('TLabelframe.Label', background=bg,font=("TkDefaultFont", 9, 'bold'))
@@ -502,6 +650,10 @@ root.resizable(False, False)
 
 # make sure the tcp server is closing
 def on_close():
+    try:
+        stop_event.set()
+    except:
+        pass
     if eastShutter:
         eastShutter.on_close()
     if westShutter:
@@ -510,6 +662,7 @@ def on_close():
 
 root.protocol("WM_DELETE_WINDOW", on_close)
 
+start_rdp_monitor()
 root.mainloop()
 
 Motor.velleman.CloseDevice()
