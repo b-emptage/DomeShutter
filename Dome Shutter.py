@@ -604,7 +604,10 @@ def open_secret_menu():
                 z = os.path.exists("stop_monitor.flag")
                 print(f'Creating stop flag: {z}')
         elif not developer_mode["enabled"]:
-            os.remove("stop_monitor.flag")
+            # When toggled off, remove the stop flag and restart monitor
+            if os.exists("stop_monitor.flag"):
+                os.remove("stop_monitor.flag")
+                start_rdp_monitor()
   
         
     warn_label = tk.Label(dev_window, text="WARNING: Disabling this feature\n" +
