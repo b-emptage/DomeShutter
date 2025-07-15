@@ -23,6 +23,7 @@ import threading
 #from msl.loadlib import LoadLibrary
 #from msl.loadlib import IS_PYTHON_64BIT
 import sys
+import os
 
 
 TIMEOUT_MINUTES = 5
@@ -513,9 +514,10 @@ class Speaker:
         self.thread.join()
 
 class shutdown_monitor:
-    def __init__(self, stop_event):
-        self.stop_event = stop_event
-        
+    def __init__(self):
+        if os.path.exists("stop_monitor.flag")        :
+            os.remove("stop_monitor.flag")
+
     def is_rdp_active(self):
         '''
         Checks if there is currently an active RDP session to the machine
@@ -558,7 +560,8 @@ class shutdown_monitor:
     def monitor_rdp(self):
         global last_active_time
         print("Starting RDP session monitor...")
-        while not self.stop_event.is_set():
+        # as long as stop_monitor.flag file doesn't exist, monitor RDP sessions
+        while not os.path.exists("stop_monitor.flag"):
             if self.is_rdp_active():
                 last_active_time = datetime.now()
                 print(f"[{datetime.now()}] RDP session active.")
@@ -580,8 +583,7 @@ class shutdown_monitor:
 
 
 def start_rdp_monitor():
-    stop_event = threading.Event()
-    monitor = shutdown_monitor(stop_event)
+    monitor = shutdown_monitor()
     threading.Thread(target=monitor.monitor_rdp, daemon=True).start()
 
 developer_mode = {"enabled": False}
@@ -594,7 +596,16 @@ def open_secret_menu():
 
     def toggle_dev_mode():
         developer_mode["enabled"] = dev_var.get()
-        print(f"Developer mode set to: {developer_mode['enabled']}")
+        print(f"Toggle set to: {developer_mode['enabled']}")
+        # turn off RDP monitor
+        if developer_mode["enabled"]:
+            with open("stop_monitor.flag", "w") as f:
+                f.write(f"{datetime.now()}: stop")
+                z = os.path.exists("stop_monitor.flag")
+                print(f'Creating stop flag: {z}')
+        elif not developer_mode["enabled"]:
+            os.remove("stop_monitor.flag")
+  
         
     warn_label = tk.Label(dev_window, text="WARNING: Disabling this feature\n" +
                           "will stop the system from \n" +
@@ -623,7 +634,8 @@ ttk.Style().theme_use('winnative')
 #s.theme_use('xpnative')
 #s.theme_use('vista')
 pbc="#666666"
-ttk.Style().configure("red.Horizontal.TProgressbar", foreground=pbc, background=pbc,troughcolor ='Darkblue')
+ttk.Style().configure("red.Horizontal.TProgressbar", foreground=pbc,
+                      background=pbc,troughcolor ='Darkblue')
 
 #bColour = ttk.Style().lookup('openE_button', 'background')
 #print bColour
@@ -636,10 +648,10 @@ ttk.Style().configure("green.TButton", background="green")
 
 #Background styles darker than default and LableFrame text to bold
 bg = "#aaaaaa"
-stop_event = None  # initialise a stop_event prior to 
 #print ttk.Style().lookup("TLabelframe.Label", "font")
 ttk.Style().configure('TLabelframe', background=bg)
-ttk.Style().configure('TLabelframe.Label', background=bg,font=("TkDefaultFont", 9, 'bold'))
+ttk.Style().configure('TLabelframe.Label', background=bg,
+                      font=("TkDefaultFont", 9, 'bold'))
 ttk.Style().configure('TLabel', background=bg)
 
 #Create an instance of each shutter
@@ -648,12 +660,10 @@ westShutter = Shutter(root, "West", "Left")
 eastShutter = Shutter(root, "East", "Right")
 root.resizable(False, False)
 
-# make sure the tcp server is closing
+# make sure the tcp server is closing and the RDP monitor stops
 def on_close():
-    try:
-        stop_event.set()
-    except:
-        pass
+    with open("stop_monitor.flag", "w") as f:
+        f.write(f"{datetime.now}: stop")
     if eastShutter:
         eastShutter.on_close()
     if westShutter:
