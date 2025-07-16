@@ -571,17 +571,20 @@ class shutdown_monitor:
         # as long as stop_monitor.flag file doesn't exist, monitor RDP sessions
         while self.running:
             stop_flag = os.path.exists("stop_monitor.flag")
-            # flag is false = we want to monitor
+            # if stop_flag is true we don't want to do anything
             if not stop_flag:
-                # restart the timer if stop_flag was True on last loop
+                # restart the timer if stop_flag is True (set in previous loop)
                 if flag_changed:
                     last_active_time = datetime.now()
                 if self.is_rdp_active():
+                    # we have an active connection, update last active time
                     last_active_time = datetime.now()
                     print(f"[{datetime.now()}] RDP session active.")
                 else:
+                    # calculate time between last active time and now
                     elapsed = datetime.now() - last_active_time
                     print(f"[{datetime.now()}] No active RDP session. Elapsed: {elapsed}")
+                    # check if RDP has been inactive for more than set timeout
                     if elapsed > timedelta(minutes=TIMEOUT_MINUTES):
                         self.disconnected_client_shutdown()
                         # Wait until RDP reconnects
@@ -616,7 +619,7 @@ class shutdown_monitor:
         # restart monitor when session is connected
         if self.is_rdp_active() and self.running:
             print(f"[{datetime.now()}] RDP session reconnected.")
-            self.monitor_rdp()
+            return  # go back to monitor_rdp loop
 
 
 def start_rdp_monitor():
