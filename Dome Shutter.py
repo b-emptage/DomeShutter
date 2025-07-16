@@ -61,6 +61,7 @@ class Motor():
             #raise SystemExit(0)
         master.destroy()   
     def __init__(self, openSW,closeSW):
+        print(f"Dome motor instance initialised on channels o:{openSW}, c:{closeSW}")
         self.openSW = openSW
         self.closeSW = closeSW
         self.stop()
@@ -69,10 +70,12 @@ class Motor():
 
     def open(self):
         self.opening = True
+        print(f"Opening on channel: {self.openSW}")
         Motor.velleman.SetDigitalChannel(self.openSW)
         
     def close(self):
         self.closing = True
+        print(f"Closing on channel: {self.closeSW}")
         Motor.velleman.SetDigitalChannel(self.closeSW)
 
     def stop(self):
@@ -515,8 +518,11 @@ class Speaker:
 
 class shutdown_monitor:
     def __init__(self):
-        if os.path.exists("stop_monitor.flag")        :
+        if os.path.exists("stop_monitor.flag"):
             os.remove("stop_monitor.flag")
+        self.running = True
+        global last_active_time 
+        last_active_time = datetime.now()
 
     def is_rdp_active(self):
         '''
@@ -540,6 +546,7 @@ class shutdown_monitor:
         shutter_east = None
         shutter_west = None
         try:
+            # initialise a connection to the dome, telescope
             shutter_east = Motor(Motor.EASTOPEN, Motor.EASTCLOSE)
             shutter_west = Motor(Motor.WESTOPEN, Motor.WESTCLOSE)
             scope = Telescope()
@@ -550,36 +557,66 @@ class shutdown_monitor:
             time.sleep(0.5)  # give it a half second
             scope.park()
         if shutter_east:
-            shutter_west.close()
+            westShutter.closeShutter()
+            #shutter_west.close()
             time.sleep(1)  # prevent over-current on switch by staggering motors
-            shutter_east.close()
+            eastShutter.closeShutter()
+            #shutter_east.close()
         pythoncom.CoUninitialize()  # this will close the ASCOM client
-            
-    
-    
+
     def monitor_rdp(self):
         global last_active_time
         print("Starting RDP session monitor...")
+        flag_changed = False  # to restart timer when the stop flag is removed
         # as long as stop_monitor.flag file doesn't exist, monitor RDP sessions
-        while not os.path.exists("stop_monitor.flag"):
-            if self.is_rdp_active():
-                last_active_time = datetime.now()
-                print(f"[{datetime.now()}] RDP session active.")
+        while self.running:
+            stop_flag = os.path.exists("stop_monitor.flag")
+            # flag is false = we want to monitor
+            if not stop_flag:
+                # restart the timer if stop_flag was True on last loop
+                if flag_changed:
+                    last_active_time = datetime.now()
+                if self.is_rdp_active():
+                    last_active_time = datetime.now()
+                    print(f"[{datetime.now()}] RDP session active.")
+                else:
+                    elapsed = datetime.now() - last_active_time
+                    print(f"[{datetime.now()}] No active RDP session. Elapsed: {elapsed}")
+                    if elapsed > timedelta(minutes=TIMEOUT_MINUTES):
+                        self.disconnected_client_shutdown()
+                        # Wait until RDP reconnects
+                        self.wait_for_rdp()
+            # stop_flag exists, which means something wants the monitor stopped
             else:
-                elapsed = datetime.now() - last_active_time
-                print(f"[{datetime.now()}] No active RDP session. Elapsed: {elapsed}")
-                if elapsed > timedelta(minutes=TIMEOUT_MINUTES):
-                    self.disconnected_client_shutdown()
-                    # Wait until RDP reconnects
-                    self.wait_for_rdp()
+                with open("stop_monitor.flag", "r") as f:
+                    contents = f.read().strip().lower()
+                    if "end" in contents:
+                        print("End flag present from main loop. Stopping RDPM")
+                        self.running = False
+                        break
+            # this will turn true when stop_flag becomes true (was changed) 
+            flag_changed = stop_flag
+            print(f"Monitoring, running state: {self.running}")
             time.sleep(CHECK_INTERVAL)
     
     def wait_for_rdp(self):
         print("Waiting for RDP reconnection...")
-        while not self.is_rdp_active():
+        while not self.is_rdp_active() and self.running:
             print(f"[{datetime.now()}] No active RDP session.")
+            # check for the stop flag and stop if it exists
+            if os.path.exists("stop_monitor.flag"):
+                with open("stop_monitor.flag", "r") as f:
+                    contents = f.read().strip().lower()
+                    if "end" in contents:
+                        print("End flag present. Stopping RDP monitor")
+                        self.running = False
+                        break
+            print(f"Waiting, status of running: {self.running}")
             time.sleep(CHECK_INTERVAL)
-        print(f"[{datetime.now()}] RDP session reconnected.")
+        # restart monitor when session is connected
+        if self.is_rdp_active() and self.running:
+            print(f"[{datetime.now()}] RDP session reconnected.")
+            self.monitor_rdp()
 
 
 def start_rdp_monitor():
@@ -588,7 +625,7 @@ def start_rdp_monitor():
 
 developer_mode = {"enabled": False}
 
-def open_secret_menu():
+def open_admin_menu():
     dev_window = tk.Toplevel()
     dev_window.title("Shutdown Controls")
     dev_window.text = tk.LabelFrame(dev_window)
@@ -604,12 +641,9 @@ def open_secret_menu():
                 z = os.path.exists("stop_monitor.flag")
                 print(f'Creating stop flag: {z}')
         elif not developer_mode["enabled"]:
-            # When toggled off, remove the stop flag and restart monitor
             if os.path.exists("stop_monitor.flag"):
                 os.remove("stop_monitor.flag")
-                start_rdp_monitor()
-  
-        
+
     warn_label = tk.Label(dev_window, text="WARNING: Disabling this feature\n" +
                           "will stop the system from \n" +
                           "shutting down safely in \n" +
@@ -627,7 +661,7 @@ def open_secret_menu():
 
 # root window
 root = tk.Tk()
-root.bind("<s>", lambda event: open_secret_menu())
+root.bind("<s>", lambda event: open_admin_menu())
 #root.geometry('370x175')
 root.title('Shutter Control v1.0')
 # progressbar
@@ -666,7 +700,7 @@ root.resizable(False, False)
 # make sure the tcp server is closing and the RDP monitor stops
 def on_close():
     with open("stop_monitor.flag", "w") as f:
-        f.write(f"{datetime.now}: stop")
+        f.write(f"{datetime.now()}: end")
     if eastShutter:
         eastShutter.on_close()
     if westShutter:
