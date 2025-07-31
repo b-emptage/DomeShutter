@@ -61,7 +61,7 @@ class Motor():
             #raise SystemExit(0)
         master.destroy()   
     def __init__(self, openSW,closeSW):
-        print(f"[{datetime.now()}] Dome motor instance initialised on channels o:{openSW}, c:{closeSW}")
+        #print(f"[{datetime.now()}] Dome motor instance initialised on channels o:{openSW}, c:{closeSW}")
         self.openSW = openSW
         self.closeSW = closeSW
         self.stop()
@@ -70,16 +70,16 @@ class Motor():
 
     def open(self):
         self.opening = True
-        print(f"[{datetime.now()}] Opening on channel: {self.openSW}")
+        #print(f"[{datetime.now()}] Opening on channel: {self.openSW}")
         Motor.velleman.SetDigitalChannel(self.openSW)
         
     def close(self):
         self.closing = True
-        print(f"[{datetime.now()}] Closing on channel: {self.closeSW}")
+        #print(f"[{datetime.now()}] Closing on channel: {self.closeSW}")
         Motor.velleman.SetDigitalChannel(self.closeSW)
 
     def stop(self):
-        print(f"[{datetime.now()}] Stopping channels: {self.openSW}, {self.closeSW}")
+        #print(f"[{datetime.now()}] Stopping channels: {self.openSW}, {self.closeSW}")
         Motor.velleman.ClearDigitalChannel(self.openSW)
         Motor.velleman.ClearDigitalChannel(self.closeSW)
         self.closing = False
@@ -200,9 +200,7 @@ class TCPServer():
                 readable, _, _ = select.select([self.client_socket], [], [], 0)
                 if readable:
                     data = self.client_socket.recv(1024)
-                    if data:
-                        print(f"Client: {data.decode()}")
-                        
+                    if data:                        
                         # Process specific commands
                         if b'OK' in data:
                             self.client_socket.send(b'Host: OK')
@@ -332,6 +330,10 @@ class Shutter():
     
     def handle_tcp_data(self, data):
         # Handle data from the TCP server
+        if data is None:
+            self.update_tcp_status(False)
+            return
+        
         if data:
             if "close" in data.lower():
                 # Close both shutters
@@ -601,7 +603,6 @@ class shutdown_monitor:
                         break
             # this will turn true when stop_flag becomes true (was changed) 
             flag_changed = stop_flag
-            print(f"Monitoring, running state: {self.running}")
             time.sleep(CHECK_INTERVAL)
     
     def wait_for_rdp(self):
@@ -616,7 +617,6 @@ class shutdown_monitor:
                         print("End flag present. Stopping RDP monitor")
                         self.running = False
                         break
-            print(f"Waiting, status of running: {self.running}")
             time.sleep(CHECK_INTERVAL)
         # restart monitor when session is connected
         if self.is_rdp_active() and self.running:
