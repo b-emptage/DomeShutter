@@ -69,16 +69,20 @@ class Dome_Control():
         # analog channels for dome position
         self.wpos = 1
         self.epos = 2
+        # placeholder for position data
+        self.last_pos = [0,0]
         
-        self.dir_delay = 750  # ms delay between switching directions
+        self.dir_delay = 0.750  # s delay between switching directions
         self.stop_e()  # ensure dome stopped on initialisation
         self.stop_w()
+        self.monitor(0.1)  # 100ms polling
         
 
     def open_e(self):
         # stop themotor if the hutter is in the opposite state
         if self.e_state == 'closing':
             self.stop_e()
+            time.sleep(self.dir_delay)
         self.e_state = 'opening'
         self.velleman.set_output(self.eosw)
         
@@ -98,12 +102,14 @@ class Dome_Control():
         # stop the motor if the shutter is in the opposite state
         if self.w_state == 'closing':
             self.stop_w()
+            time.sleep(self.dir_delay)
         self.w_state = 'opening'
         self.velleman.set_output(self.wosw)
         
     def close_w(self):
         if self.w_state == 'opening':
             self.stop_w()
+            time.sleep(self.dir_delay)
         self.w_state = 'closing'
         self.velleman.set_output(self.wcsw)
 
@@ -145,6 +151,52 @@ class Dome_Control():
         '''
         Returns the current values of the analog inputs on the Velleman
         '''
-        west = self.velleman.ReadAnalogChannel(self.wpos)
-        east = self.velleman.ReadAnalogChannel(self.epos)
-        return east,west
+        west = self.velleman.read_analogue(self.wpos)
+        east = self.velleman.read_analogue(self.epos)
+        return [east,west]
+    
+    def update_status(self):
+        switches = self.read_shutter_switches()
+        self.positions = self.read_shutter_positions()
+        now = time.time()
+      
+        if self.last_pos[0] == self.positions[0]:
+            self.e_timer = now
+        if self.last_pos[1] == self.positions[1]:
+            self.w_timer = now
+        
+        # position hasn't changed for 1 second
+        if (now - self.e_timer) > 1:
+            self.stop_e()
+        
+        if (now - self.w_timer)  > 1:
+            self.stop_w()
+        
+        # stop the dome from continuing to open when the limit switch is active
+        if self.e_state == 'opening' and switches['east_limit']:
+            print("East shutter fully open, stopping")
+            self.stop_e()
+        
+        if self.w_state == 'opening' and switches['west_limit']:
+            print("West shutter fully open, stopping")
+            self.stop_w()
+        
+        if self.e_state == 'closing' and switches['all_closed']:
+            print("East shutter fully closed, stopping")
+            self.stop_e()
+        
+        if self.w_state == 'closing' and switches['all_closed']:
+            print("West shutter fully closed, stopping")
+            self.stop_w()
+        
+        # retain the last position data for comparison
+        self.last_pos = self.positions
+            
+    
+    def monitor(self, pollrate):
+        # polling loop to return current dome status
+        def loop():
+            while True:
+                self.update_status()
+                time.sleep(pollrate)
+        threading.Thread(target=loop, daemon=True).start()
