@@ -157,41 +157,68 @@ class Dome_Control():
     
     def update_status(self):
         switches = self.read_shutter_switches()
-        self.positions = self.read_shutter_positions()
+        self.east_position, self.west_position = self.read_shutter_positions()
         now = time.time()
-      
-        if self.last_pos[0] == self.positions[0]:
+        if not hasattr(self, 'e_timer'):
             self.e_timer = now
-        if self.last_pos[1] == self.positions[1]:
+        if not hasattr(self, 'w_timer'):
             self.w_timer = now
+        if not hasattr(self, 'last_east'):
+            self.last_east = self.east_position
+        if not hasattr(self, 'last_west'):
+            self.last_west = self.west_position
         
-        # position hasn't changed for 1 second
-        if (now - self.e_timer) > 1:
-            self.stop_e()
+        # logic for stops on east shutter opening
+        if self.e_state == 'opening':
+            # update the timer on positive position change
+            if self.east_position > self.last_east:
+                self.e_timer = now
+            # stop shutter if the position hasn't updated for more than 1 sec
+            if (now - self.e_timer) > 1:
+                print("East shutter opening timeout, stopping")
+                self.stop_e()
+            # stop if the dome is on the soft limit switch
+            if switches['east_limit']:
+                print("East shutter fully open, stopping")
+                self.stop_e()
+            # when opening, we only want the analogue channel to increase
+            self.last_east = max(self.last_east, self.east_position)
+        # logic for stops on east shutter closing
+        if self.e_state == 'closing':
+            # update timer on negative position change
+            if self.east_position < self.last_east:
+                self.e_timer = now
+            if (now - self.e_timer) > 1:
+                print("East shutter closing timeout, stopping")
+                self.stop_e()
+            if switches['all_closed']:
+                print("East shutter fully closed, stopping")
+                self.stop_e()
+            # when closing we only want the analog channel to decrease
+            self.last_east = min(self.last_east, self.east_position)
         
-        if (now - self.w_timer)  > 1:
-            self.stop_w()
-        
-        # stop the dome from continuing to open when the limit switch is active
-        if self.e_state == 'opening' and switches['east_limit']:
-            print("East shutter fully open, stopping")
-            self.stop_e()
-        
-        if self.w_state == 'opening' and switches['west_limit']:
-            print("West shutter fully open, stopping")
-            self.stop_w()
-        
-        if self.e_state == 'closing' and switches['all_closed']:
-            print("East shutter fully closed, stopping")
-            self.stop_e()
-        
-        if self.w_state == 'closing' and switches['all_closed']:
-            print("West shutter fully closed, stopping")
-            self.stop_w()
-        
-        # retain the last position data for comparison
-        self.last_pos = self.positions
-            
+        # logic for west shutters, as above
+        if self.w_state == 'opening':
+            if self.west_position > self.last_west:
+                self.w_timer = now
+            if (now - self.w_timer) > 1:
+                print("West shutter opening timeout, stopping")
+                self.stop_w()
+            if switches['west_limit']:
+                print("West shutter fully open, stopping")
+                self.stop_w()
+            self.last_west = max(self.last_west, self.west_position)
+        if self.w_state == 'closing':
+            if self.west_position < self.last_west:
+                self.w_timer = now
+            if (now - self.w_timer) > 1:
+                print("West shutter closing timeout, stopping")
+                self.stop_w()
+            if switches['all_closed']:
+                print("West shutter fully closed, stopping")
+                self.stop_w()
+            self.last_west = min(self.last_west, self.west_position)
+
     
     def monitor(self, pollrate):
         # polling loop to return current dome status

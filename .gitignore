@@ -1,2 +1,10 @@
 
 *.dll
+dist/DomeShutter.exe
+build/Dome Shutter/xref-Dome Shutter.html
+/build
+/dist
+dome.ico
+Dome Shutter.spec
+stop_monitor.flag
+stop_monitor.flag
