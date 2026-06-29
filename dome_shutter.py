@@ -4,10 +4,6 @@ Created on Mon May 18 09:39:38 2026
 
 @author: bemptage
 """
-
-from tkinter import ttk
-import tkinter as tk
-from tkinter.messagebox import askokcancel
 import time
 from datetime import datetime, timedelta
 import socket
@@ -16,12 +12,10 @@ import subprocess
 import ctypes
 import win32com.client
 import pythoncom
-from pydub import AudioSegment
+#from pydub import AudioSegment
 from pydub.playback import play
 from queue import Queue
 import threading
-#from msl.loadlib import LoadLibrary
-#from msl.loadlib import IS_PYTHON_64BIT
 import sys
 import os
 
@@ -99,6 +93,11 @@ class Dome_Control:
         self.velleman.clear_output(self.eosw)
         self.velleman.clear_output(self.ecsw)
         self.e_state = 'stopped'
+
+    def position_e(self, setpoint):
+        '''
+        Moves the shutter to the setpoint position
+        '''
     
     def open_w(self):
         # stop the motor if the shutter is in the opposite state
@@ -570,3 +569,59 @@ class shutdown_monitor:
         if self.is_rdp_active() and self.running:
             print(f"[{datetime.now()}] RDP session reconnected.")
             return  # go back to monitor_rdp loop
+
+
+def start_rdp_monitor():
+    monitor = shutdown_monitor()
+    threading.Thread(target=monitor.monitor_rdp, daemon=True).start()
+
+shutdown_mode = {"enabled": False}
+admin_window_instance = None
+
+#TODO: limit to single window
+def open_admin_menu():
+    global admin_window_instance
+    
+    if admin_window_instance is not None and \
+        tk.Toplevel.winfo_exists(admin_window_instance):
+        admin_window_instance.lift()
+        return
+    
+    admin_window_instance = tk.Toplevel()
+    admin_window_instance.title("Shutdown Controls")
+    admin_window_instance.text = tk.LabelFrame(admin_window_instance)
+    admin_window_instance.geometry("200x150")
+    
+    def on_close():
+        # make sure single instance performs correctly on close
+        global admin_window_instance
+        admin_window_instance.destroy()
+        admin_window_instance = None
+    
+    admin_window_instance.protocol("WM_DELETE_WINDOW", on_close)
+
+    def toggle_sd_mode():
+        shutdown_mode["enabled"] = sd_var.get()
+        print(f"Toggle set to: {shutdown_mode['enabled']}")
+        # turn off RDP monitor
+        if shutdown_mode["enabled"]:
+            with open("stop_monitor.flag", "w") as f:
+                f.write(f"{datetime.now()}: stop")
+                z = os.path.exists("stop_monitor.flag")
+                print(f'Creating stop flag: {z}')
+        elif not shutdown_mode["enabled"]:
+            if os.path.exists("stop_monitor.flag"):
+                os.remove("stop_monitor.flag")
+    # make sure people know what ticking the button will do
+    warn_label = tk.Label(admin_window_instance,
+                          text="WARNING: Disabling this feature\n" +
+                          "will stop the system from \n" +
+                          "shutting down safely in \n" +
+                          "the event of a disconnect.")
+    warn_label.pack(pady=10)    
+
+    sd_var = tk.BooleanVar(value=shutdown_mode["enabled"])
+    sd_checkbox = ttk.Checkbutton(admin_window_instance,
+                                   text="Disable RDP auto-shutdown?",
+                                   variable=sd_var, command=toggle_sd_mode)
+    sd_checkbox.pack(pady=10)

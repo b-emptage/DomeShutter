@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="palette">
+   <palette>
+    <active>
+     <colorrole role="BrightText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>212</red>
+        <green>127</green>
+        <blue>127</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Highlight">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>145</red>
+        <green>50</green>
+        <blue>36</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Link">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>179</red>
+        <green>121</green>
+        <blue>69</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="LinkVisited">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>116</red>
+        <green>82</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Accent">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>193</red>
+        <green>103</green>
+        <blue>91</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </active>
+    <inactive>
+     <colorrole role="BrightText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>212</red>
+        <green>127</green>
+        <blue>127</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Highlight">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>145</red>
+        <green>50</green>
+        <blue>36</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Link">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>179</red>
+        <green>121</green>
+        <blue>69</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="LinkVisited">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>116</red>
+        <green>82</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Accent">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>193</red>
+        <green>103</green>
+        <blue>91</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </inactive>
+    <disabled>
+     <colorrole role="BrightText">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>212</red>
+        <green>127</green>
+        <blue>127</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Link">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>179</red>
+        <green>121</green>
+        <blue>69</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="LinkVisited">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>116</red>
+        <green>82</green>
+        <blue>33</blue>
+       </color>
+      </brush>
+     </colorrole>
+     <colorrole role="Accent">
+      <brush brushstyle="SolidPattern">
+       <color alpha="255">
+        <red>193</red>
+        <green>103</green>
+        <blue>91</blue>
+       </color>
+      </brush>
+     </colorrole>
+    </disabled>
+   </palette>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QPushButton" name="west_open">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>130</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Open</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="west_stop">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>90</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Stop</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="west_close">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>50</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Close</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="east_open">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>130</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Open</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="east_stop">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>90</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Stop</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="east_close">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>50</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Close</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="west_label">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>10</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LayoutDirection::LeftToRight</enum>
+    </property>
+    <property name="text">
+     <string>West</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="east_label">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>10</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>East</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="WindVane" name="Wind" native="true">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>30</y>
+      <width>200</width>
+      <height>200</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>275</x>
+      <y>0</y>
+      <width>50</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Wind</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="west_progress">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>29</y>
+      <width>30</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="value">
+     <number>100</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Orientation::Vertical</enum>
+    </property>
+    <property name="invertedAppearance">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="east_progress">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>30</y>
+      <width>30</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="baseSize">
+     <size>
+      <width>0</width>
+      <height>0</height>
+     </size>
+    </property>
+    <property name="palette">
+     <palette>
+      <active>
+       <colorrole role="BrightText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>212</red>
+          <green>127</green>
+          <blue>127</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Highlight">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>145</red>
+          <green>50</green>
+          <blue>36</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Link">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>179</red>
+          <green>121</green>
+          <blue>69</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="LinkVisited">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>116</red>
+          <green>82</green>
+          <blue>33</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Accent">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>193</red>
+          <green>103</green>
+          <blue>91</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </active>
+      <inactive>
+       <colorrole role="BrightText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>212</red>
+          <green>127</green>
+          <blue>127</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Highlight">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>145</red>
+          <green>50</green>
+          <blue>36</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Link">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>179</red>
+          <green>121</green>
+          <blue>69</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="LinkVisited">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>116</red>
+          <green>82</green>
+          <blue>33</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Accent">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>193</red>
+          <green>103</green>
+          <blue>91</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </inactive>
+      <disabled>
+       <colorrole role="BrightText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>212</red>
+          <green>127</green>
+          <blue>127</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Link">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>179</red>
+          <green>121</green>
+          <blue>69</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="LinkVisited">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>116</red>
+          <green>82</green>
+          <blue>33</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Accent">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>193</red>
+          <green>103</green>
+          <blue>91</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </disabled>
+     </palette>
+    </property>
+    <property name="value">
+     <number>100</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Orientation::Vertical</enum>
+    </property>
+    <property name="invertedAppearance">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QSlider" name="west_set_pos">
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>20</y>
+      <width>20</width>
+      <height>191</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>100</number>
+    </property>
+    <property name="sliderPosition">
+     <number>100</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Orientation::Vertical</enum>
+    </property>
+    <property name="invertedAppearance">
+     <bool>false</bool>
+    </property>
+    <property name="invertedControls">
+     <bool>false</bool>
+    </property>
+    <property name="tickPosition">
+     <enum>QSlider::TickPosition::TicksBelow</enum>
+    </property>
+    <property name="tickInterval">
+     <number>25</number>
+    </property>
+   </widget>
+   <widget class="QSlider" name="east_set_pos">
+    <property name="geometry">
+     <rect>
+      <x>440</x>
+      <y>20</y>
+      <width>20</width>
+      <height>191</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>100</number>
+    </property>
+    <property name="sliderPosition">
+     <number>100</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Orientation::Vertical</enum>
+    </property>
+    <property name="tickPosition">
+     <enum>QSlider::TickPosition::TicksAbove</enum>
+    </property>
+    <property name="tickInterval">
+     <number>25</number>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="west_set">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>170</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>To Setpoint</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="east_set">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>170</y>
+      <width>80</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>To Setpoint</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>600</width>
+     <height>33</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menufsgsdg">
+    <property name="title">
+     <string>Options</string>
+    </property>
+    <addaction name="actionDisable_RDP_Monitor"/>
+    <addaction name="separator"/>
+    <addaction name="actionConnect_RainMon"/>
+    <addaction name="separator"/>
+   </widget>
+   <addaction name="menufsgsdg"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionDisable_RDP_Monitor">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Disable RDP Monitor</string>
+   </property>
+  </action>
+  <action name="actionConnect_RainMon">
+   <property name="text">
+    <string>Connect RainMon</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>WindVane</class>
+   <extends>QWidget</extends>
+   <header>wind_vane.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
