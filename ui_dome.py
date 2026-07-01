@@ -28,10 +28,10 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(600, 300)
         palette = QPalette()
-        brush = QBrush(QColor(212, 127, 127, 255))
+        brush = QBrush(QColor(60, 90, 50, 255))
         brush.setStyle(Qt.BrushStyle.SolidPattern)
         palette.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.BrightText, brush)
-        brush1 = QBrush(QColor(145, 50, 36, 255))
+        brush1 = QBrush(QColor(60, 110, 50, 255))
         brush1.setStyle(Qt.BrushStyle.SolidPattern)
         palette.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, brush1)
         brush2 = QBrush(QColor(179, 121, 69, 255))
@@ -40,23 +40,21 @@ class Ui_MainWindow(object):
         brush3 = QBrush(QColor(116, 82, 33, 255))
         brush3.setStyle(Qt.BrushStyle.SolidPattern)
         palette.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.LinkVisited, brush3)
-        brush4 = QBrush(QColor(193, 103, 91, 255))
-        brush4.setStyle(Qt.BrushStyle.SolidPattern)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-        palette.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Accent, brush4)
+        palette.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Accent, brush)
 #endif
         palette.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.BrightText, brush)
         palette.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, brush1)
         palette.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Link, brush2)
         palette.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.LinkVisited, brush3)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-        palette.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Accent, brush4)
+        palette.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Accent, brush)
 #endif
         palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, brush)
         palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, brush2)
         palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, brush3)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-        palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Accent, brush4)
+        palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Accent, brush)
 #endif
         MainWindow.setPalette(palette)
         self.actionDisable_RDP_Monitor = QAction(MainWindow)
@@ -103,9 +101,19 @@ class Ui_MainWindow(object):
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.west_progress = QProgressBar(self.centralwidget)
         self.west_progress.setObjectName(u"west_progress")
-        self.west_progress.setGeometry(QRect(160, 29, 30, 171))
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
+        self.west_progress.setGeometry(QRect(160, 30, 30, 171))
+        self.west_progress.setStyleSheet("""
+                    QProgressBar {
+                        border: 1px solid gray;
+                        text-align: center;
+                        font-size: 7pt;
+                    }
+                    QProgressBar::chunk {
+                        background-color: #3c5a32;
+                    }
+                    """)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
+        sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.west_progress.sizePolicy().hasHeightForWidth())
         self.west_progress.setSizePolicy(sizePolicy)
@@ -115,29 +123,44 @@ class Ui_MainWindow(object):
         self.east_progress = QProgressBar(self.centralwidget)
         self.east_progress.setObjectName(u"east_progress")
         self.east_progress.setGeometry(QRect(410, 30, 30, 171))
-        sizePolicy.setHeightForWidth(self.east_progress.sizePolicy().hasHeightForWidth())
-        self.east_progress.setSizePolicy(sizePolicy)
+        self.east_progress.setStyleSheet("""
+                            QProgressBar {
+                                border: 1px solid gray;
+                                text-align: center;
+                                font-size: 7pt;
+                            }
+                            QProgressBar::chunk {
+                                background-color: #3c5a32;
+                            }
+                            """)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.east_progress.sizePolicy().hasHeightForWidth())
+        self.east_progress.setSizePolicy(sizePolicy1)
         self.east_progress.setBaseSize(QSize(0, 0))
         palette1 = QPalette()
         palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.BrightText, brush)
-        palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, brush1)
+        brush4 = QBrush(QColor(60, 120, 50, 255))
+        brush4.setStyle(Qt.BrushStyle.SolidPattern)
+        palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, brush4)
         palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Link, brush2)
         palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.LinkVisited, brush3)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-        palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Accent, brush4)
+        palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Accent, brush)
 #endif
         palette1.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.BrightText, brush)
-        palette1.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, brush1)
+        palette1.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, brush4)
         palette1.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Link, brush2)
         palette1.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.LinkVisited, brush3)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-        palette1.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Accent, brush4)
+        palette1.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Accent, brush)
 #endif
         palette1.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, brush)
         palette1.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, brush2)
         palette1.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, brush3)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-        palette1.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Accent, brush4)
+        palette1.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Accent, brush)
 #endif
         self.east_progress.setPalette(palette1)
         self.east_progress.setValue(100)
@@ -145,7 +168,7 @@ class Ui_MainWindow(object):
         self.east_progress.setInvertedAppearance(False)
         self.west_set_pos = QSlider(self.centralwidget)
         self.west_set_pos.setObjectName(u"west_set_pos")
-        self.west_set_pos.setGeometry(QRect(140, 20, 20, 191))
+        self.west_set_pos.setGeometry(QRect(130, 20, 20, 191))
         self.west_set_pos.setMaximum(100)
         self.west_set_pos.setSliderPosition(100)
         self.west_set_pos.setOrientation(Qt.Orientation.Vertical)
@@ -155,7 +178,7 @@ class Ui_MainWindow(object):
         self.west_set_pos.setTickInterval(25)
         self.east_set_pos = QSlider(self.centralwidget)
         self.east_set_pos.setObjectName(u"east_set_pos")
-        self.east_set_pos.setGeometry(QRect(440, 20, 20, 191))
+        self.east_set_pos.setGeometry(QRect(450, 20, 20, 191))
         self.east_set_pos.setMaximum(100)
         self.east_set_pos.setSliderPosition(100)
         self.east_set_pos.setOrientation(Qt.Orientation.Vertical)

@@ -24,7 +24,7 @@ CHECK_INTERVAL = 60  # seconds between RDP activity checks
 
 last_active_time = datetime.now()
 
-class Velleman:
+class _Velleman:
     def __init__(self):
         #Load 64 or 32 bit velleman library: 
         if ctypes.sizeof(ctypes.c_voidp)*8 == 64 :  #64bit
@@ -48,11 +48,8 @@ class Velleman:
         return self.lib.ReadAnalogChannel(channel)
 
 class Dome_Control:
-    #Delays
-    offDelay = 1500 #Time to leave power on motor once opened/closed
-    
     def __init__(self):
-        self.velleman = Velleman()
+        self.velleman = _Velleman()
         self.e_state = 'stopped'
         self.w_state = 'stopped'
         # output ports for opening/closing
@@ -67,60 +64,106 @@ class Dome_Control:
         # analog channels for dome position
         self.wpos = 1
         self.epos = 2
+        # timers for various timeout functions
+        self.e_timer = 0
+        self.w_timer = 0
+        # direct position values and tolerance for positioning
+        self.east_target = None
+        self.west_target = None
+        self.tolerance = 2
+        self.east_position, self.west_position = self._read_shutter_positions()
         
         self.dir_delay = 0.750  # s delay between switching directions
         self.stop_e()  # ensure dome stopped on initialisation
         self.stop_w()
-        self.monitor(0.1)  # 100ms polling
-        
+        self._monitor(0.1)  # 100ms polling
+
+    def _set_state(self, shutter, state):
+        """
+        :param shutter: which shutter to set state for
+        :param state: state of shutter
+        :return: nothing
+
+        Should be called on any motor event, set the various states and timers appropriately.
+        """
+        now = time.time()
+        if shutter.lower() == 'e':
+            self.e_state = state
+            self.e_timer = now
+            self.last_east = self.east_position
+        elif shutter.lower() == 'w':
+            self.w_state = state
+            self.w_timer = now
+            self.last_west = self.west_position
 
     def open_e(self):
-        # stop themotor if the hutter is in the opposite state
+        # stop the motor if the shutter is in the opposite state
         if self.e_state == 'closing':
             self.stop_e()
             time.sleep(self.dir_delay)
-        self.e_state = 'opening'
+        self._set_state('e', 'opening')
         self.velleman.set_output(self.eosw)
         
     def close_e(self):
         if self.e_state == 'opening':
             self.stop_e()
             time.sleep(self.dir_delay)  # pause before swapping directions
-        self.e_state = 'closing'
+        self._set_state('e', 'closing')
         self.velleman.set_output(self.ecsw)
 
     def stop_e(self):
         self.velleman.clear_output(self.eosw)
         self.velleman.clear_output(self.ecsw)
-        self.e_state = 'stopped'
+        self._set_state('e', 'stopped')
 
-    def position_e(self, setpoint):
-        '''
+    def goto_e(self, setpoint):
+        """
         Moves the shutter to the setpoint position
-        '''
+        """
+        self.east_target = setpoint
+        if self.east_position < self.east_target - self.tolerance:
+            # open the dome to increase position. Do nothing if close to target (within tolerance value)
+            self.open_e()
+        elif self.east_position > self.east_target + self.tolerance:
+            self.close_e()
+        else:
+            # do nothing if setpoint results in too small of a movement
+            return
     
     def open_w(self):
         # stop the motor if the shutter is in the opposite state
         if self.w_state == 'closing':
             self.stop_w()
             time.sleep(self.dir_delay)
-        self.w_state = 'opening'
+        self._set_state('w', 'opening')
         self.velleman.set_output(self.wosw)
         
     def close_w(self):
         if self.w_state == 'opening':
             self.stop_w()
             time.sleep(self.dir_delay)
-        self.w_state = 'closing'
+        self._set_state('w', 'closing')
         self.velleman.set_output(self.wcsw)
 
     def stop_w(self):
         self.velleman.clear_output(self.wosw)
         self.velleman.clear_output(self.wcsw)
-        self.w_state = 'stopped'
+        self._set_state('w', 'stopped')
+
+    def goto_w(self, setpoint):
+        """
+            Moves the west shutter to the setpoint position
+        """
+        self.west_target = setpoint
+        if self.west_position < self.west_target - self.tolerance:
+            self.open_w()
+        elif self.west_position > self.west_target + self.tolerance:
+            self.close_w()
+        else:
+            return
     
-    def read_shutter_switches(self):
-        '''
+    def _read_shutter_switches(self):
+        """
         Checks the status of the dome input switches:
             1: West shutter: 0 on fully open
             2: East shutter: 0 on fully open
@@ -132,7 +175,7 @@ class Dome_Control:
             2: West fully open, but east not fully open
             3: East and west not fully open
             7: East and west fully closed
-        '''
+        """
         
         def bit_set(v, chan):
             '''
@@ -148,31 +191,51 @@ class Dome_Control:
                 'raw': val
             }
     
-    def read_shutter_positions(self):
-        '''
+    def _read_shutter_positions(self):
+        """
         Returns the current values of the analog inputs on the Velleman
-        '''
+        """
         west = self.velleman.read_analogue(self.wpos)
         east = self.velleman.read_analogue(self.epos)
         return [east,west]
     
-    def update_status(self):
-        '''
+    def _update_status(self):
+        """
         Reads out the analogue channels of the Velleman board, and checks their
         status. Includes logic to time out and close the digital channels while
         opening or closing
-        '''
-        switches = self.read_shutter_switches()
-        self.east_position, self.west_position = self.read_shutter_positions()
+        """
+        switches = self._read_shutter_switches()
+        self.east_position, self.west_position = self._read_shutter_positions()
         now = time.time()
-        if not hasattr(self, 'e_timer'):
-            self.e_timer = now
-        if not hasattr(self, 'w_timer'):
-            self.w_timer = now
+
+        # just in case
         if not hasattr(self, 'last_east'):
             self.last_east = self.east_position
         if not hasattr(self, 'last_west'):
             self.last_west = self.west_position
+
+        def _east_set_reached():
+            # logic for reaching set position, if one is active on motor activation
+            if self.east_target is None:
+                # don't want to do anything if no target set
+                return False
+            if self.e_state == 'opening':
+                # When position exceeds set target, we want this to evaluate as true (open past point)
+                return self.east_position >= self.east_target - self.tolerance
+            elif self.e_state == 'closing':
+                # When position smaller than set target, we want to be able to stop motors
+                return self.east_position <= self.east_target + self.tolerance
+            return False
+
+        def _west_set_reached():
+            if self.west_target is None:
+                return False
+            if self.w_state == 'opening':
+                return self.west_position >= self.west_target - self.tolerance
+            elif self.w_state == 'closing':
+                return self.west_position <= self.west_target + self.tolerance
+            return False
         
         # logic for stops on east shutter opening
         if self.e_state == 'opening':
@@ -183,23 +246,34 @@ class Dome_Control:
             if (now - self.e_timer) > 1:
                 print("East shutter opening timeout, stopping")
                 self.stop_e()
+                self.east_target = None
             # stop if the dome is on the soft limit switch
-            if switches['east_limit']:
+            elif switches['east_limit']:
                 print("East shutter fully open, stopping")
                 self.stop_e()
+                self.east_target = None
+            # stop the motors if a drive to position has been issued and we are close to that position
+            elif _east_set_reached():
+                self.stop_e()
+                self.east_target = None
             # when opening, we only want the analogue channel to increase
             self.last_east = max(self.last_east, self.east_position)
         # logic for stops on east shutter closing
-        if self.e_state == 'closing':
+        elif self.e_state == 'closing':
             # update timer on negative position change
             if self.east_position < self.last_east:
                 self.e_timer = now
             if (now - self.e_timer) > 1:
                 print("East shutter closing timeout, stopping")
                 self.stop_e()
-            if switches['all_closed']:
+                self.east_target = None
+            elif switches['all_closed']:
                 print("East shutter fully closed, stopping")
                 self.stop_e()
+                self.east_target = None
+            elif _east_set_reached():
+                self.stop_e()
+                self.east_target = None
             # when closing we only want the analog channel to decrease
             self.last_east = min(self.last_east, self.east_position)
         
@@ -210,30 +284,40 @@ class Dome_Control:
             if (now - self.w_timer) > 1:
                 print("West shutter opening timeout, stopping")
                 self.stop_w()
-            if switches['west_limit']:
+                self.west_target = None
+            elif switches['west_limit']:
                 print("West shutter fully open, stopping")
                 self.stop_w()
+                self.west_target = None
+            elif _west_set_reached():
+                self.stop_w()
+                self.west_target = None
             self.last_west = max(self.last_west, self.west_position)
-        if self.w_state == 'closing':
+        elif self.w_state == 'closing':
             if self.west_position < self.last_west:
                 self.w_timer = now
             if (now - self.w_timer) > 1:
                 print("West shutter closing timeout, stopping")
                 self.stop_w()
-            if switches['all_closed']:
+                self.west_target = None
+            elif switches['all_closed']:
                 print("West shutter fully closed, stopping")
                 self.stop_w()
+                self.west_target = None
+            elif _west_set_reached():
+                self.stop_w()
+                self.west_target = None
             self.last_west = min(self.last_west, self.west_position)
 
     
-    def monitor(self, pollrate):
+    def _monitor(self, pollrate):
         # polling loop to return current dome status
         def loop():
             while True:
-                self.update_status()
+                self._update_status()
                 time.sleep(pollrate)
         threading.Thread(target=loop, daemon=True).start()
-
+    # TODO set up safe shutdown of thread on close
 
 class Telescope:
     ASCOM_DRIVER = "DDR_ASCOM.Telescope"
@@ -578,7 +662,7 @@ def start_rdp_monitor():
 shutdown_mode = {"enabled": False}
 admin_window_instance = None
 
-#TODO: limit to single window
+#TODO: move to QT architecture and into dome_UI
 def open_admin_menu():
     global admin_window_instance
     

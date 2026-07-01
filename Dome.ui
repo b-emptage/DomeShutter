@@ -16,18 +16,18 @@
      <colorrole role="BrightText">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>212</red>
-        <green>127</green>
-        <blue>127</blue>
+        <red>60</red>
+        <green>90</green>
+        <blue>50</blue>
        </color>
       </brush>
      </colorrole>
      <colorrole role="Highlight">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>145</red>
-        <green>50</green>
-        <blue>36</blue>
+        <red>60</red>
+        <green>110</green>
+        <blue>50</blue>
        </color>
       </brush>
      </colorrole>
@@ -52,9 +52,9 @@
      <colorrole role="Accent">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>193</red>
-        <green>103</green>
-        <blue>91</blue>
+        <red>60</red>
+        <green>90</green>
+        <blue>50</blue>
        </color>
       </brush>
      </colorrole>
@@ -63,18 +63,18 @@
      <colorrole role="BrightText">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>212</red>
-        <green>127</green>
-        <blue>127</blue>
+        <red>60</red>
+        <green>90</green>
+        <blue>50</blue>
        </color>
       </brush>
      </colorrole>
      <colorrole role="Highlight">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>145</red>
-        <green>50</green>
-        <blue>36</blue>
+        <red>60</red>
+        <green>110</green>
+        <blue>50</blue>
        </color>
       </brush>
      </colorrole>
@@ -99,9 +99,9 @@
      <colorrole role="Accent">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>193</red>
-        <green>103</green>
-        <blue>91</blue>
+        <red>60</red>
+        <green>90</green>
+        <blue>50</blue>
        </color>
       </brush>
      </colorrole>
@@ -110,9 +110,9 @@
      <colorrole role="BrightText">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>212</red>
-        <green>127</green>
-        <blue>127</blue>
+        <red>60</red>
+        <green>90</green>
+        <blue>50</blue>
        </color>
       </brush>
      </colorrole>
@@ -137,9 +137,9 @@
      <colorrole role="Accent">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>193</red>
-        <green>103</green>
-        <blue>91</blue>
+        <red>60</red>
+        <green>90</green>
+        <blue>50</blue>
        </color>
       </brush>
      </colorrole>
@@ -293,14 +293,14 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>29</y>
+      <y>30</y>
       <width>30</width>
       <height>171</height>
      </rect>
     </property>
     <property name="sizePolicy">
-     <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-      <horstretch>0</horstretch>
+     <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+      <horstretch>100</horstretch>
       <verstretch>0</verstretch>
      </sizepolicy>
     </property>
@@ -341,18 +341,18 @@
        <colorrole role="BrightText">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>212</red>
-          <green>127</green>
-          <blue>127</blue>
+          <red>60</red>
+          <green>90</green>
+          <blue>50</blue>
          </color>
         </brush>
        </colorrole>
        <colorrole role="Highlight">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>145</red>
-          <green>50</green>
-          <blue>36</blue>
+          <red>60</red>
+          <green>120</green>
+          <blue>50</blue>
          </color>
         </brush>
        </colorrole>
@@ -377,9 +377,9 @@
        <colorrole role="Accent">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>193</red>
-          <green>103</green>
-          <blue>91</blue>
+          <red>60</red>
+          <green>90</green>
+          <blue>50</blue>
          </color>
         </brush>
        </colorrole>
@@ -388,18 +388,18 @@
        <colorrole role="BrightText">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>212</red>
-          <green>127</green>
-          <blue>127</blue>
+          <red>60</red>
+          <green>90</green>
+          <blue>50</blue>
          </color>
         </brush>
        </colorrole>
        <colorrole role="Highlight">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>145</red>
-          <green>50</green>
-          <blue>36</blue>
+          <red>60</red>
+          <green>120</green>
+          <blue>50</blue>
          </color>
         </brush>
        </colorrole>
@@ -424,9 +424,9 @@
        <colorrole role="Accent">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>193</red>
-          <green>103</green>
-          <blue>91</blue>
+          <red>60</red>
+          <green>90</green>
+          <blue>50</blue>
          </color>
         </brush>
        </colorrole>
@@ -435,9 +435,9 @@
        <colorrole role="BrightText">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>212</red>
-          <green>127</green>
-          <blue>127</blue>
+          <red>60</red>
+          <green>90</green>
+          <blue>50</blue>
          </color>
         </brush>
        </colorrole>
@@ -462,9 +462,9 @@
        <colorrole role="Accent">
         <brush brushstyle="SolidPattern">
          <color alpha="255">
-          <red>193</red>
-          <green>103</green>
-          <blue>91</blue>
+          <red>60</red>
+          <green>90</green>
+          <blue>50</blue>
          </color>
         </brush>
        </colorrole>
@@ -484,7 +484,7 @@
    <widget class="QSlider" name="west_set_pos">
     <property name="geometry">
      <rect>
-      <x>140</x>
+      <x>130</x>
       <y>20</y>
       <width>20</width>
       <height>191</height>
@@ -515,7 +515,7 @@
    <widget class="QSlider" name="east_set_pos">
     <property name="geometry">
      <rect>
-      <x>440</x>
+      <x>450</x>
       <y>20</y>
       <width>20</width>
       <height>191</height>
