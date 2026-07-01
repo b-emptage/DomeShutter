@@ -32,8 +32,9 @@ class DomeWorker(QObject):
         self.dome.close_w()
 
     @Slot(int)
-    def west_setpoint(self, value):
+    def west_goto(self, value):
         self.west_status.emit(f"WEST SETPOINT {value}")
+        self.dome.goto_w(value)
 
     @Slot()
     def east_open(self):
@@ -51,12 +52,16 @@ class DomeWorker(QObject):
         self.dome.close_e()
 
     @Slot(int)
-    def east_set(self, value):
+    def east_goto(self, value):
         self.east_status.emit(f"EAST SETPOINT {value}")
+        self.dome.goto_e(value)
 
 
 
 class DomeWindow(QMainWindow):
+    # worker signals
+    west_setpoint_requested = Signal(int)
+    east_setpoint_requested = Signal(int)
     def __init__(self):
         super().__init__()
 
@@ -69,6 +74,8 @@ class DomeWindow(QMainWindow):
         self.dome_thread.start()
         self.worker.east_status.connect(self.east_status)
         self.worker.west_status.connect(self.west_status)
+        self.west_setpoint_requested.connect(self.worker.west_goto)
+        self.east_setpoint_requested.connect(self.worker.east_goto)
         self.ui.west_open.clicked.connect(self.worker.west_open)
         self.ui.west_stop.clicked.connect(self.worker.west_stop)
         self.ui.west_close.clicked.connect(self.worker.west_close)
@@ -84,6 +91,8 @@ class DomeWindow(QMainWindow):
         value = self.ui.west_set_pos.value()
         print(f"WEST SETPOINT → {value}")
         self.ui.west_progress.setValue(value)
+        # send the dome to the requested position
+        self.west_setpoint_requested.emit(value)
 
     def west_status(self, text):
         #self.west_statusBar().showMessage(text)
@@ -93,6 +102,7 @@ class DomeWindow(QMainWindow):
         value = self.ui.east_set_pos.value()
         print(f"EAST SETPOINT → {value}")
         self.ui.east_progress.setValue(value)
+        self.east_setpoint_requested.emit(value)
 
     def east_status(self, text):
         #self.east_statusBar().showMessage(text)
