@@ -71,7 +71,8 @@ class Dome_Control:
         self.east_target = None
         self.west_target = None
         self.tolerance = 2
-        self.east_position, self.west_position = self._read_shutter_positions()
+        self.east_position, self.west_position = self.read_shutter_positions()
+        self.last_east, self.last_west = self.east_position, self.west_position
         
         self.dir_delay = 0.750  # s delay between switching directions
         self.stop_e()  # ensure dome stopped on initialisation
@@ -90,11 +91,9 @@ class Dome_Control:
         if shutter.lower() == 'e':
             self.e_state = state
             self.e_timer = now
-            self.last_east = self.east_position
         elif shutter.lower() == 'w':
             self.w_state = state
             self.w_timer = now
-            self.last_west = self.west_position
 
     def open_e(self):
         # stop the motor if the shutter is in the opposite state
@@ -191,7 +190,7 @@ class Dome_Control:
                 'raw': val
             }
     
-    def _read_shutter_positions(self):
+    def read_shutter_positions(self):
         """
         Returns the current values of the analog inputs on the Velleman
         """
@@ -206,14 +205,8 @@ class Dome_Control:
         opening or closing
         """
         switches = self._read_shutter_switches()
-        self.east_position, self.west_position = self._read_shutter_positions()
+        self.east_position, self.west_position = self.read_shutter_positions()
         now = time.time()
-
-        # just in case
-        if not hasattr(self, 'last_east'):
-            self.last_east = self.east_position
-        if not hasattr(self, 'last_west'):
-            self.last_west = self.west_position
 
         def _east_set_reached():
             # logic for reaching set position, if one is active on motor activation
