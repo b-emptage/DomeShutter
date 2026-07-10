@@ -73,6 +73,7 @@ class Dome_Control:
         self.tolerance = 2
         self.east_position, self.west_position = self.read_shutter_positions()
         self.last_east, self.last_west = self.east_position, self.west_position
+        self.east_closed_position, self.west_closed_position = 0, 0  # might need to tweak based on real data
         
         self.dir_delay = 0.750  # s delay between switching directions
         self.stop_e()  # ensure dome stopped on initialisation
@@ -110,6 +111,19 @@ class Dome_Control:
         self._set_state('e', 'closing')
         self.velleman.set_output(self.ecsw)
 
+    def _drive_close_e(self):
+        """
+        Serves as a failsafe way to have the dome drive closed in the case of the closed switch failing on
+        """
+        if self.e_state == 'opening':
+            self.stop_e()
+            time.sleep(self.dir_delay)
+        #start driving the dome closed
+        self.velleman.set_output(self.ecsw)
+        # TODO: replace with logic using dome position
+        time.sleep(2)  # let the dome close fully
+        self.stop_e()
+
     def stop_e(self):
         self.velleman.clear_output(self.eosw)
         self.velleman.clear_output(self.ecsw)
@@ -143,6 +157,19 @@ class Dome_Control:
             time.sleep(self.dir_delay)
         self._set_state('w', 'closing')
         self.velleman.set_output(self.wcsw)
+
+    def _drive_close_w(self):
+        """
+        Serves as a failsafe way to have the dome drive closed in the case of the closed switch failing on
+        """
+        if self.w_state == 'opening':
+            self.stop_w()
+            time.sleep(self.dir_delay)
+        #start driving the dome closed
+        self.velleman.set_output(self.wcsw)
+        # TODO: replace with logic using dome position
+        time.sleep(2)  # let the dome close fully
+        self.stop_w()
 
     def stop_w(self):
         self.velleman.clear_output(self.wosw)
@@ -245,6 +272,12 @@ class Dome_Control:
                 print("East shutter fully open, stopping")
                 self.stop_e()
                 self.east_target = None
+            elif switches['all_closed'] and self.east_position > self.east_closed_position + 15 :
+                print("Dome opening failed, stopping")
+                # Stop command issued as part of _drive_close_e below
+                self.east_target = None
+                # Dome is going to be in a partially open state now, and closing will not work as the switch says closed
+                self._drive_close_e()
             # stop the motors if a drive to position has been issued and we are close to that position
             elif _east_set_reached():
                 self.stop_e()
@@ -260,7 +293,7 @@ class Dome_Control:
                 print("East shutter closing timeout, stopping")
                 self.stop_e()
                 self.east_target = None
-            elif switches['all_closed']:
+            elif switches['all_closed']:                                                                
                 print("East shutter fully closed, stopping")
                 self.stop_e()
                 self.east_target = None
@@ -282,6 +315,11 @@ class Dome_Control:
                 print("West shutter fully open, stopping")
                 self.stop_w()
                 self.west_target = None
+            elif switches['all_closed'] and self.west_position > self.west_closed_position + 15 :
+                print("Dome opening failed, stopping")
+                # Stop command issued as part of _drive_close_w()
+                self.west_target = None
+                self._drive_close_w()
             elif _west_set_reached():
                 self.stop_w()
                 self.west_target = None
