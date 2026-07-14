@@ -74,6 +74,7 @@ class Dome_Control:
         self.east_position, self.west_position = self.read_shutter_positions()
         self.last_east, self.last_west = self.east_position, self.west_position
         self.east_closed_position, self.west_closed_position = 0, 0  # might need to tweak based on real data
+        self.east_open_position, self.west_open_position = 175, 175  # tweak based on real data
         
         self.dir_delay = 0.750  # s delay between switching directions
         self.stop_e()  # ensure dome stopped on initialisation
@@ -133,7 +134,7 @@ class Dome_Control:
         """
         Moves the shutter to the setpoint position
         """
-        self.east_target = setpoint
+        self.east_target = self._convert_east_set(setpoint)
         if self.east_position < self.east_target - self.tolerance:
             # open the dome to increase position. Do nothing if close to target (within tolerance value)
             self.open_e()
@@ -180,13 +181,27 @@ class Dome_Control:
         """
             Moves the west shutter to the setpoint position
         """
-        self.west_target = setpoint
+        self.west_target = self._convert_west_set(setpoint)
         if self.west_position < self.west_target - self.tolerance:
             self.open_w()
         elif self.west_position > self.west_target + self.tolerance:
             self.close_w()
         else:
             return
+
+    def _convert_west_set(self, percentage):
+        """
+        Converts a percentage value to a position value for the west shutter
+        """
+        val = int(percentage * (self.west_open_position - self.west_closed_position) + self.west_closed_position)
+        return val
+
+    def _convert_east_set(self, percentage):
+        """
+        Converts a percentage value to a position value for the west shutter
+        """
+        val = int(percentage * (self.east_open_position - self.east_closed_position) + self.east_closed_position)
+        return val
     
     def _read_shutter_switches(self):
         """
@@ -293,7 +308,7 @@ class Dome_Control:
                 print("East shutter closing timeout, stopping")
                 self.stop_e()
                 self.east_target = None
-            elif switches['all_closed']:                                                                
+            elif switches['all_closed']:
                 print("East shutter fully closed, stopping")
                 self.stop_e()
                 self.east_target = None
