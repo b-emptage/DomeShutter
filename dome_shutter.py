@@ -74,7 +74,7 @@ class Dome_Control:
         self.east_position, self.west_position = self.read_shutter_positions()
         self.last_east, self.last_west = self.east_position, self.west_position
         self.east_closed_position, self.west_closed_position = 0, 0  # might need to tweak based on real data
-        self.east_open_position, self.west_open_position = 175, 175  # tweak based on real data
+        self.east_open_position, self.west_open_position = 235, 235  # tweak based on real data
         
         self.dir_delay = 0.750  # s delay between switching directions
         self.stop_e()  # ensure dome stopped on initialisation
@@ -103,6 +103,8 @@ class Dome_Control:
             self.stop_e()
             time.sleep(self.dir_delay)
         self._set_state('e', 'opening')
+        # redundant clear for safety
+        self.velleman.clear_output(self.ecsw)
         self.velleman.set_output(self.eosw)
         
     def close_e(self):
@@ -110,6 +112,7 @@ class Dome_Control:
             self.stop_e()
             time.sleep(self.dir_delay)  # pause before swapping directions
         self._set_state('e', 'closing')
+        self.velleman.clear_output(self.eosw)
         self.velleman.set_output(self.ecsw)
 
     def _drive_close_e(self):
@@ -120,6 +123,7 @@ class Dome_Control:
             self.stop_e()
             time.sleep(self.dir_delay)
         #start driving the dome closed
+        self.velleman.clear_output(self.eosw)
         self.velleman.set_output(self.ecsw)
         # TODO: replace with logic using dome position
         time.sleep(2)  # let the dome close fully
@@ -150,6 +154,7 @@ class Dome_Control:
             self.stop_w()
             time.sleep(self.dir_delay)
         self._set_state('w', 'opening')
+        self.velleman.clear_output(self.wcsw)
         self.velleman.set_output(self.wosw)
         
     def close_w(self):
@@ -157,6 +162,7 @@ class Dome_Control:
             self.stop_w()
             time.sleep(self.dir_delay)
         self._set_state('w', 'closing')
+        self.velleman.clear_output(self.wosw)
         self.velleman.set_output(self.wcsw)
 
     def _drive_close_w(self):
@@ -167,6 +173,7 @@ class Dome_Control:
             self.stop_w()
             time.sleep(self.dir_delay)
         #start driving the dome closed
+        self.velleman.clear_output(self.wosw)
         self.velleman.set_output(self.wcsw)
         # TODO: replace with logic using dome position
         time.sleep(2)  # let the dome close fully
