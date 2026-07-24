@@ -72,7 +72,7 @@ class Dome_Control:
         self.east_target = None
         self.west_target = None
         self.tolerance = 2
-        self.east_position, self.west_position = self.read_shutter_positions()
+        self.east_position, self.west_position = self._read_shutter_positions()
         self.last_east, self.last_west = self.east_position, self.west_position
         self.east_closed_position, self.west_closed_position = 0, 0  # might need to tweak based on real data
         self.east_open_position, self.west_open_position = 235, 235  # tweak based on real data
@@ -269,7 +269,7 @@ class Dome_Control:
                 'raw': val
             }
     
-    def read_shutter_positions(self):
+    def _read_shutter_positions(self):
         """
         Returns the current values of the analog inputs on the Velleman
         """
@@ -285,7 +285,7 @@ class Dome_Control:
         """
         with self._lock:
             switches = self._read_shutter_switches()
-            self.east_position, self.west_position = self.read_shutter_positions()
+            self.east_position, self.west_position = self._read_shutter_positions()
             now = time.time()
 
             def _east_set_reached():
@@ -346,7 +346,13 @@ class Dome_Control:
                     print("East shutter closing timeout, stopping")
                     self.stop_e()
                     self.east_target = None
+                # this is only true when west is also closed
                 elif switches['all_closed']:
+                    print("East shutter fully closed, stopping")
+                    self.stop_e()
+                    self.east_target = None
+                # stop when we reach the shut position
+                elif self.east_position <= self.east_closed_position:
                     print("East shutter fully closed, stopping")
                     self.stop_e()
                     self.east_target = None
@@ -385,6 +391,10 @@ class Dome_Control:
                     self.stop_w()
                     self.west_target = None
                 elif switches['all_closed']:
+                    print("West shutter fully closed, stopping")
+                    self.stop_w()
+                    self.west_target = None
+                elif self.west_position <= self.west_closed_position:
                     print("West shutter fully closed, stopping")
                     self.stop_w()
                     self.west_target = None
@@ -748,51 +758,3 @@ def start_rdp_monitor():
 
 shutdown_mode = {"enabled": False}
 admin_window_instance = None
-
-#TODO: move to QT architecture and into dome_UI
-def open_admin_menu():
-    global admin_window_instance
-    
-    if admin_window_instance is not None and \
-        tk.Toplevel.winfo_exists(admin_window_instance):
-        admin_window_instance.lift()
-        return
-    
-    admin_window_instance = tk.Toplevel()
-    admin_window_instance.title("Shutdown Controls")
-    admin_window_instance.text = tk.LabelFrame(admin_window_instance)
-    admin_window_instance.geometry("200x150")
-    
-    def on_close():
-        # make sure single instance performs correctly on close
-        global admin_window_instance
-        admin_window_instance.destroy()
-        admin_window_instance = None
-    
-    admin_window_instance.protocol("WM_DELETE_WINDOW", on_close)
-
-    def toggle_sd_mode():
-        shutdown_mode["enabled"] = sd_var.get()
-        print(f"Toggle set to: {shutdown_mode['enabled']}")
-        # turn off RDP monitor
-        if shutdown_mode["enabled"]:
-            with open("stop_monitor.flag", "w") as f:
-                f.write(f"{datetime.now()}: stop")
-                z = os.path.exists("stop_monitor.flag")
-                print(f'Creating stop flag: {z}')
-        elif not shutdown_mode["enabled"]:
-            if os.path.exists("stop_monitor.flag"):
-                os.remove("stop_monitor.flag")
-    # make sure people know what ticking the button will do
-    warn_label = tk.Label(admin_window_instance,
-                          text="WARNING: Disabling this feature\n" +
-                          "will stop the system from \n" +
-                          "shutting down safely in \n" +
-                          "the event of a disconnect.")
-    warn_label.pack(pady=10)    
-
-    sd_var = tk.BooleanVar(value=shutdown_mode["enabled"])
-    sd_checkbox = ttk.Checkbutton(admin_window_instance,
-                                   text="Disable RDP auto-shutdown?",
-                                   variable=sd_var, command=toggle_sd_mode)
-    sd_checkbox.pack(pady=10)
